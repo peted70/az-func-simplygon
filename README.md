@@ -1,6 +1,8 @@
 # Welcome 
 
-This repository contains (part of) the outcome of creating a [Simplygon](simplygon.com/) cloud service using Azure Functions. In particular, this Function takes a zip file, extracts it, and runs Smplygon's polygon reduction alghorithms. After that, you'll get a zip file back with the results. We have tested this with Simplygon 9 (the paid version as of this writing).
+This repository contains (part of) the outcome of creating a [Simplygon](simplygon.com/) cloud service using Azure Functions. In particular, this Function takes a zip file, extracts it, and runs Smplygon's polygon reduction alghorithms. After that, you'll get a zip file back with the results. We have tested this with Simplygon 9 (the paid version as of this writing). 
+
+Find out more about the background and other work surrounding this project [here](http://peted.azurewebsites.net/simplygon-in-azure/).
 
 Click the deploy to Azure button below to get up and running quickly. 
 
