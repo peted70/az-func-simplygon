@@ -123,19 +123,19 @@ return new FileStreamResult(stream, System.Net.Mime.MediaTypeNames.Application.Z
 
 So, we have shown how to build and deploy two example nodes for a 3D content pipeline but in order to test this I currently need to carry out the following:
 
-1. Take the model and textures from [here](https://github.com/peted70/az-func-blender/tree/master/TestModels) and add all contents of that folder to a zip archive as it is organized in the folder
+1. Take the model and textures from [here](https://github.com/peted70/az-func-blender/tree/master/TestModels) and add all contents of that folder to a zip archive as it is organized in the folder ![Create Zip](./images/input-zip.png)
 
-2. Manually uploaded to blob storage or some other accessible storage
+2. Manually uploaded to blob storage or some other accessible storage ![Upload Zip](./images/zip-in-blob.png)
 
-3. Used the resulting URI (I generated a SAS URI using the [Azure portal](https://ms.portal.azure.com/) as input to run the Blender Azure Function running either locally or in Azure and download the resulting zip archive (You could use [Postman](https://www.postman.com/) with a POST/GET request or a browser with a GET request)
+3. Used the resulting URI (I generated a SAS URI using the [Azure portal](https://ms.portal.azure.com/) as input to run the Blender Azure Function running either locally or in Azure and download the resulting zip archive (You could use [Postman](https://www.postman.com/) with a POST/GET request or a browser with a GET request) ![Generate SAS URI](./images/generate-sas.png) ![Test in Postman](./images/postman-blender.png)
 
-4. Upload that zip archive to blob storage manually (so we can get another URI)
+4. Upload the downloaded zip archive to blob storage manually (so we can get another URI). So repeat the above step but with the downloaded archive.
 
 5. Use the resulting SAS URI as input to the Simplygon Azure Function running locally on PC or deployed to Azure
 
 6. Download and check the resulting zip archive
 
-![Compare Results](./images/results.png)
+![Compare Results](./images/results-high.png)
 *Shows the original mesh both shaded and wireframe against the processed result*
 
 And here is the output returned in the zip archive:
