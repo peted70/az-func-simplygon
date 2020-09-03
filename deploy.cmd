@@ -59,8 +59,7 @@ IF !ERRORLEVEL! NEQ 0 goto error
 call :ExecuteCmd "powershell.exe" -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('%DEPLOYMENT_SOURCE%\Simplygon9.zip', '.'); }"
 IF !ERRORLEVEL! NEQ 0 goto error
 
-call :ExecuteCmd "move %DEPLOYMENT_SOURCE%\SimplygonSDK* %DEPLOYMENT_SOURCE%\Simplygon9"
-IF !ERRORLEVEL! NEQ 0 goto error
+move %DEPLOYMENT_SOURCE%\SimplygonSDK* %DEPLOYMENT_SOURCE%\Simplygon9
 
 call :ExecuteCmd "powershell.exe" -File "%DEPLOYMENT_SOURCE%\setup_simplygon.ps1" -SimplygonLicenseKey %APPSETTING_SIMPLYGON_9_LICENSE%
 IF !ERRORLEVEL! NEQ 0 goto error
