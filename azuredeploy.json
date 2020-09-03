@@ -84,7 +84,7 @@
                         "WEBSITES_ENABLE_APP_SERVICE_STORAGE": false,
                         "SIMPLYGON_9_LICENSE": "[parameters('simplygonLicense')]",
                         "SIMPLYGON_9_VERSION": "[parameters('simplygonVersion')]",
-                        "SIMPLYGON_9_PATH": "D:\\home\\site\\repository\\Simplygon9"
+                        "SIMPLYGON_9_PATH": "C:\\home\\site\\repository\\Simplygon9"
                     }
                 },
                 {
