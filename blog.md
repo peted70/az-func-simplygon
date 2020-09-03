@@ -1,9 +1,11 @@
 # Simplygon in Azure
-![Simplygon](./images/simplygon.png)
+
+![Simplygon](./images/main-simplygon.png)
 
 I wrote a [previous blog post](http://peted.azurewebsites.net/hololensoptimising-with-simplygon/) about Simplygon a few years ago and the idea of optimising 3D meshes to enable running on a low powered device such as a HoloLens or mobile phone has cropped up on a number of occasions since. The content in the more recent projects have the additional requirement of being loaded into an app dynamically when requested by the app user. Most projects designed to run across these kinds of mobile devices usually need to address the question of whether to render content on a server or locally on the device. Sometimes that choice will be obvious and other times it will be more complicated and represent a trade-off between many competing factors.
 
-![main image](./images/main.png)
+
+![Simplygon](./images/simplygon.png)
 
 ## Server Rendering
 
@@ -14,6 +16,8 @@ On one hand if you have large 3D models with dense geometry consisting of millio
 ## Client Rendering
 
 On the other hand your original content may consist of very dense geometry; maybe it was created using photogrammetry or using a scanner, but the 3D models and the use case may be suited to geometry and material optimisation. Using techniques such as re-meshing, normal map baking and texture atlases to reduce draw calls in addition to 3D geometry compression can facilitate efficient on-device rendering and also network transmission.
+
+![main image](./images/main.png)
 
 This post will focus on how to fit those techniques into a cloud content pipeline using Simplygon. Often the system would require an 'authoring' step which would allow the content owner to associate metadata and seed 3D model content into a processing pipeline which could run on-premises or in the cloud. So following on from the previous post where we showed how to create a content pipeline on Azure using all of the power of Blender through it's Python scripting interface we'll illustrate how to have an optimisation step within the pipeline. This might look something like this:
 
