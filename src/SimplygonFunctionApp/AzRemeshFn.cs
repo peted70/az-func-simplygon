@@ -59,18 +59,27 @@ namespace SimplygonFunctionApp
                 za.ExtractToDirectory(zipDir, true);
             }
 
-            string[] remeshedFiles;
-
+            string remeshedFile;
 
             using (var sg = Simplygon.Loader.InitSimplygon(out var errorCode, out var errorMessage))
             {
                 if (errorCode != Simplygon.EErrorCodes.NoError)
                     return new BadRequestObjectResult($"Failed! {errorCode} - {errorMessage}");
 
-                remeshedFiles = await Task.WhenAll(Directory.GetFiles(zipDir).Select(async (file) => await RunRemeshingAsync(sg, log, file, ToOutputPath(outputDir, file), data.OnScreenSize)).ToList());
+                // Find the first .glTF file in the input and process it.
+                var fileToProcess = Directory.GetFiles(zipDir, "*.glTF", SearchOption.AllDirectories)
+                    .FirstOrDefault();
+                if (string.IsNullOrEmpty(fileToProcess))
+                {
+                    const string BadInputError = ".glTF input not found in zip archive.";
+                    log.LogError(BadInputError);
+                    return new BadRequestObjectResult($"Failed! {BadInputError}");
+                }
+
+                remeshedFile = await RunRemeshingWithMaterialCastingAsync(sg, log, fileToProcess, ToOutputPath(outputDir, fileToProcess), data.OnScreenSize);
             }
 
-            log.LogInformation($"Processed {outputDir.GetFiles().Length} files");
+            log.LogInformation($"Processed {remeshedFile}");
 
             var stream = new MemoryStream();
 
@@ -97,10 +106,9 @@ namespace SimplygonFunctionApp
             };
         }
 
-        private static async Task<string> RunRemeshingAsync(Simplygon.ISimplygon sg, ILogger log, string filePath, string filePathOutput, uint onScreenSize)
+        private static async Task<string> RunRemeshingWithMaterialCastingAsync(Simplygon.ISimplygon sg, ILogger log, string filePath, string filePathOutput, uint onScreenSize)
         {
-            log.LogInformation($"Scene Importer set file path: {filePath}");
-            log.LogInformation($"Scene Exporter set file path: {filePathOutput}");
+            log.LogInformation($"Scene Importer set file path: {filePath} and output {filePathOutput}");
 
             using (Simplygon.spSceneImporter sgSceneImporter = sg.CreateSceneImporter())
             {
@@ -134,10 +142,197 @@ namespace SimplygonFunctionApp
 
                     log.LogInformation($"Scene Remeshing Processor Run finished after {stopWatch.Elapsed} ms");
 
-                    // Remove original materials and textures from the scene as the remeshed object has a new UV. 
-                    sgScene.GetTextureTable().Clear();
-                    sgScene.GetMaterialTable().Clear();
+                    // Setup and run the albedo material casting.
+                    string BaseColorTextureFilePath;
+                    using (Simplygon.spColorCaster sgBaseColorCaster = sg.CreateColorCaster())
+                    {
+                        sgBaseColorCaster.SetMappingImage(sgRemeshingProcessor.GetMappingImage());
+                        sgBaseColorCaster.SetSourceMaterials(sgScene.GetMaterialTable());
+                        sgBaseColorCaster.SetSourceTextures(sgScene.GetTextureTable());
+                        sgBaseColorCaster.SetOutputFilePath("BasecolorTexture");
 
+                        using (Simplygon.spColorCasterSettings sgBaseColorCasterSettings = sgBaseColorCaster.GetColorCasterSettings())
+                        {
+                            sgBaseColorCasterSettings.SetMaterialChannel("Basecolor");
+                            sgBaseColorCasterSettings.SetOutputImageFileFormat(Simplygon.EImageOutputFormat.JPEG);
+                        }
+
+                        log.LogInformation("Processing base color...");
+                        sgBaseColorCaster.RunProcessing();
+                        log.LogInformation("Processing base color done.");
+
+                        BaseColorTextureFilePath = sgBaseColorCaster.GetOutputFilePath();
+                    }
+
+                    // Setup and run the ambient occlusion material casting. 
+                    string OcclusionTextureFilePath;
+                    using (Simplygon.spAmbientOcclusionCaster sgOcclusionCaster = sg.CreateAmbientOcclusionCaster())
+                    {
+                        sgOcclusionCaster.SetMappingImage(sgRemeshingProcessor.GetMappingImage());
+                        sgOcclusionCaster.SetSourceMaterials(sgScene.GetMaterialTable());
+                        sgOcclusionCaster.SetSourceTextures(sgScene.GetTextureTable());
+                        sgOcclusionCaster.SetOutputFilePath("OcclusionTexture");
+
+                        using (Simplygon.spAmbientOcclusionCasterSettings sgOcclusionCasterSettings = sgOcclusionCaster.GetAmbientOcclusionCasterSettings())
+                        {
+                            sgOcclusionCasterSettings.SetMaterialChannel("Occlusion");
+                            sgOcclusionCasterSettings.SetOutputImageFileFormat(Simplygon.EImageOutputFormat.JPEG);
+                        }
+
+                        log.LogInformation("Processing occlusion...");
+                        sgOcclusionCaster.RunProcessing();
+                        log.LogInformation("Processing occlusion done.");
+
+                        OcclusionTextureFilePath = sgOcclusionCaster.GetOutputFilePath();
+                    }
+
+                    string MetalnessTextureFilePath;
+                    using (Simplygon.spColorCaster sgMetalnessCaster = sg.CreateColorCaster())
+                    {
+                        sgMetalnessCaster.SetMappingImage(sgRemeshingProcessor.GetMappingImage());
+                        sgMetalnessCaster.SetSourceMaterials(sgScene.GetMaterialTable());
+                        sgMetalnessCaster.SetSourceTextures(sgScene.GetTextureTable());
+                        sgMetalnessCaster.SetOutputFilePath("MetalnessTexture");
+
+                        using (Simplygon.spColorCasterSettings sgMetalnessCasterSettings = sgMetalnessCaster.GetColorCasterSettings())
+                        {
+                            sgMetalnessCasterSettings.SetMaterialChannel("Metalness");
+                            sgMetalnessCasterSettings.SetOutputImageFileFormat(Simplygon.EImageOutputFormat.JPEG);
+                        }
+
+                        sgMetalnessCaster.RunProcessing();
+                        MetalnessTextureFilePath = sgMetalnessCaster.GetOutputFilePath();
+                    }
+
+                    string RoughnessTextureFilePath;
+                    using (Simplygon.spColorCaster sgRoughnessCaster = sg.CreateColorCaster())
+                    {
+                        sgRoughnessCaster.SetMappingImage(sgRemeshingProcessor.GetMappingImage());
+                        sgRoughnessCaster.SetSourceMaterials(sgScene.GetMaterialTable());
+                        sgRoughnessCaster.SetSourceTextures(sgScene.GetTextureTable());
+                        sgRoughnessCaster.SetOutputFilePath("RoughnessTexture");
+
+                        using (Simplygon.spColorCasterSettings sgRoughnessCasterSettings = sgRoughnessCaster.GetColorCasterSettings())
+                        {
+                            sgRoughnessCasterSettings.SetMaterialChannel("Roughness");
+                            sgRoughnessCasterSettings.SetOutputImageFileFormat(Simplygon.EImageOutputFormat.JPEG);
+                        }
+
+                        sgRoughnessCaster.RunProcessing();
+                        RoughnessTextureFilePath = sgRoughnessCaster.GetOutputFilePath();
+                    }
+
+                    // Setup and run the normals material casting. 
+                    string normalsTextureFilePath;
+                    using (Simplygon.spNormalCaster sgNormalsCaster = sg.CreateNormalCaster())
+                    {
+                        sgNormalsCaster.SetMappingImage(sgRemeshingProcessor.GetMappingImage());
+                        sgNormalsCaster.SetSourceMaterials(sgScene.GetMaterialTable());
+                        sgNormalsCaster.SetSourceTextures(sgScene.GetTextureTable());
+                        sgNormalsCaster.SetOutputFilePath("NormalsTexture");
+
+                        using (Simplygon.spNormalCasterSettings sgNormalsCasterSettings = sgNormalsCaster.GetNormalCasterSettings())
+                        {
+                            sgNormalsCasterSettings.SetMaterialChannel("Normals");
+                            sgNormalsCasterSettings.SetGenerateTangentSpaceNormals(true);
+                            sgNormalsCasterSettings.SetOutputImageFileFormat(Simplygon.EImageOutputFormat.JPEG);
+                        }
+
+                        sgNormalsCaster.RunProcessing();
+                        normalsTextureFilePath = sgNormalsCaster.GetOutputFilePath();
+                    }
+
+                    // Update scene with new casted textures. 
+                    using (Simplygon.spMaterialTable sgMaterialTable = sg.CreateMaterialTable())
+                    using (Simplygon.spTextureTable sgTextureTable = sg.CreateTextureTable())
+                    using (Simplygon.spMaterial sgMaterial = sg.CreateMaterial())
+                    {
+                        using (Simplygon.spTexture sgBaseColorTexture = sg.CreateTexture())
+                        {
+                            sgBaseColorTexture.SetName("Basecolor");
+                            sgBaseColorTexture.SetFilePath(BaseColorTextureFilePath);
+                            sgTextureTable.AddTexture(sgBaseColorTexture);
+                        }
+
+                        using (Simplygon.spShadingTextureNode sgBaseColorTextureShadingNode = sg.CreateShadingTextureNode())
+                        {
+                            sgBaseColorTextureShadingNode.SetTexCoordLevel(0);
+                            sgBaseColorTextureShadingNode.SetTextureName("Basecolor");
+
+                            sgMaterial.AddMaterialChannel("Basecolor");
+                            sgMaterial.SetShadingNetwork("Basecolor", sgBaseColorTextureShadingNode);
+                        }
+
+                        using (Simplygon.spTexture sgNormalsTexture = sg.CreateTexture())
+                        {
+                            sgNormalsTexture.SetName("Normals");
+                            sgNormalsTexture.SetFilePath(normalsTextureFilePath);
+                            sgTextureTable.AddTexture(sgNormalsTexture);
+                        }
+
+                        using (Simplygon.spShadingTextureNode sgNormalsTextureShadingNode = sg.CreateShadingTextureNode())
+                        {
+                            sgNormalsTextureShadingNode.SetTexCoordLevel(0);
+                            sgNormalsTextureShadingNode.SetTextureName("Normals");
+
+                            sgMaterial.AddMaterialChannel("Normals");
+                            sgMaterial.SetShadingNetwork("Normals", sgNormalsTextureShadingNode);
+                        }
+
+                        using (Simplygon.spTexture sgOcclusionTexture = sg.CreateTexture())
+                        {
+                            sgOcclusionTexture.SetName("Occlusion");
+                            sgOcclusionTexture.SetFilePath(OcclusionTextureFilePath);
+                            sgTextureTable.AddTexture(sgOcclusionTexture);
+                        }
+
+                        using (Simplygon.spShadingTextureNode sgOcclusionTextureShadingNode = sg.CreateShadingTextureNode())
+                        {
+                            sgOcclusionTextureShadingNode.SetTexCoordLevel(0);
+                            sgOcclusionTextureShadingNode.SetTextureName("Occlusion");
+
+                            sgMaterial.AddMaterialChannel("Occlusion");
+                            sgMaterial.SetShadingNetwork("Occlusion", sgOcclusionTextureShadingNode);
+                        }
+
+                        using (Simplygon.spTexture sgRoughnessTexture = sg.CreateTexture())
+                        {
+                            sgRoughnessTexture.SetName("Roughness");
+                            sgRoughnessTexture.SetFilePath(RoughnessTextureFilePath);
+                            sgTextureTable.AddTexture(sgRoughnessTexture);
+                        }
+
+                        using (Simplygon.spShadingTextureNode sgRoughnessTextureShadingNode = sg.CreateShadingTextureNode())
+                        {
+                            sgRoughnessTextureShadingNode.SetTexCoordLevel(0);
+                            sgRoughnessTextureShadingNode.SetTextureName("Roughness");
+
+                            sgMaterial.AddMaterialChannel("Roughness");
+                            sgMaterial.SetShadingNetwork("Roughness", sgRoughnessTextureShadingNode);
+                        }
+
+                        using (Simplygon.spTexture sgMetalnessTexture = sg.CreateTexture())
+                        {
+                            sgMetalnessTexture.SetName("Metalness");
+                            sgMetalnessTexture.SetFilePath(MetalnessTextureFilePath);
+                            sgTextureTable.AddTexture(sgMetalnessTexture);
+                        }
+
+                        using (Simplygon.spShadingTextureNode sgMetalnessTextureShadingNode = sg.CreateShadingTextureNode())
+                        {
+                            sgMetalnessTextureShadingNode.SetTexCoordLevel(0);
+                            sgMetalnessTextureShadingNode.SetTextureName("Metalness");
+                            sgMaterial.AddMaterialChannel("Metalness");
+                            sgMaterial.SetShadingNetwork("Metalness", sgMetalnessTextureShadingNode);
+                        }
+
+                        sgMaterialTable.AddMaterial(sgMaterial);
+
+                        sgScene.GetTextureTable().Clear();
+                        sgScene.GetMaterialTable().Clear();
+                        sgScene.GetTextureTable().Copy(sgTextureTable);
+                        sgScene.GetMaterialTable().Copy(sgMaterialTable);
+                    }
                 }
                 using (Simplygon.spSceneExporter sgSceneExporter = sg.CreateSceneExporter())
                 {
