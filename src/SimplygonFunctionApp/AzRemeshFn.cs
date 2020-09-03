@@ -108,8 +108,7 @@ namespace SimplygonFunctionApp
 
         private static async Task<string> RunRemeshingWithMaterialCastingAsync(Simplygon.ISimplygon sg, ILogger log, string filePath, string filePathOutput, uint onScreenSize)
         {
-            log.LogInformation($"Scene Importer set file path: {filePath}");
-            log.LogInformation($"Scene Exporter set file path: {filePathOutput}");
+            log.LogInformation($"Scene Importer set file path: {filePath} and output {filePathOutput}");
 
             using (Simplygon.spSceneImporter sgSceneImporter = sg.CreateSceneImporter())
             {
