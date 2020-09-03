@@ -122,7 +122,7 @@ While this is a prototypical implementation, we welcome help in keeping this up 
 
 # Handcrafted ♥️ with by 
 
-[Bart](github.com/bart-jansen), [Carlos](github.com/CarlosSardo), [Martin](github.com/mtirion), [Peter](github.com/peted70), [Claus](github.com/celaus), [Jan](github.com/jantielens)
+[Bart](https://github.com/bart-jansen), [Carlos](https://github.com/CarlosSardo), [Martin](https://github.com/mtirion), [Peter](https://github.com/peted70), [Claus](https://github.com/celaus), [Jan](https://github.com/jantielens)
 
 
 # License
