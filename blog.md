@@ -2,18 +2,21 @@
 
 ![Simplygon](./images/main-simplygon.png)
 
-I wrote a [previous blog post](http://peted.azurewebsites.net/hololensoptimising-with-simplygon/) about Simplygon a few years ago and the idea of optimising 3D meshes to enable running on a low powered device such as a HoloLens or mobile phone has cropped up on a number of occasions since. The content in the more recent projects have the additional requirement of being loaded into an app dynamically when requested by the app user. Most projects designed to run across these kinds of mobile devices usually need to address the question of whether to render content on a server or locally on the device. Sometimes that choice will be obvious and other times it will be more complicated and represent a trade-off between many competing factors.
+Before I begin I want to credit team members from Microsoft CSE (commercial Software Engineering) as the effort was shared:
 
+- Bart Jansen, Carlos Sardo, Martin Tirion, Claus Matzinger, Jan Tielens, Laurent Ellerbach
+
+I wrote a [previous blog post](http://peted.azurewebsites.net/hololensoptimising-with-simplygon/) about Simplygon a few years ago and the idea of optimising 3D meshes to enable running on a low powered device such as a HoloLens or mobile phone has cropped up on a number of occasions since. The content in the more recent projects have the additional requirement of being loaded into an app dynamically when requested by the app user. Most projects designed to run across these kinds of mobile devices usually need to address the question of whether to render content on a server or locally on the device. Sometimes that choice will be obvious and other times it will be more complicated and represent a trade-off between many competing factors.
 
 ![Simplygon](./images/simplygon.png)
 
-## Server Rendering
+## Rendering on the Server
 
 On one hand if you have large 3D models with dense geometry consisting of millions of triangles where you need to see all of the fine details and the content isn't well suited for optimisation then server-side rendering might be the right choice for you. You might need to account for the infrastructure and maintenance work required to set up a server-side rendering solution and you also will need to understand the costs associated with running cloud services for this kind of a solution. You may need to scale across millions of users or you may only need to spin up and down services at a much smaller scale. If the latter applies then [Azure Remote Rendering](https://azure.microsoft.com/en-gb/services/remote-rendering/) would be a suitable consideration. If the former, then maybe [3D Streaming Toolkit](https://github.com/3DStreamingToolkit/3DStreamingToolkit) or a custom client/server rendering solution might be more cost-effective.
 
 ![Azure Remote Render](./images/arr-engine.png)
 
-## Client Rendering
+## Rendering on the Client
 
 On the other hand your original content may consist of very dense geometry; maybe it was created using photogrammetry or using a scanner, but the 3D models and the use case may be suited to geometry and material optimisation. Using techniques such as re-meshing, normal map baking and texture atlases to reduce draw calls in addition to 3D geometry compression can facilitate efficient on-device rendering and also network transmission.
 
@@ -37,7 +40,7 @@ The Simplygon SDK comes with a suite of examples (see [Simplygon Samples](https:
 
 ![Remeshing Sample](./images/remeshing-sample.png)
 
-We can create an Azure Function in the same way as the previous Blender post and we are going to reuse the code to accept a Uri to a zip archive which contains the 3D model. For details see the [post](http://peted.azurewebsites.net/blender-in-azure/). But instead of calling down into the Blender executable which is installed in the Linux container we are going to call the Simplygon SDK directly.
+We can create an Azure Function in the same way as the previous Blender post and we are going to reuse the code to accept a URI to a zip archive which contains the 3D model. For details see the [post](http://peted.azurewebsites.net/blender-in-azure/). But instead of calling down into the Blender executable which is installed in the Linux container we are going to call the Simplygon SDK directly.
 
 The samples come with a SimplygonLoader class that verifies the local environment and checks the license. So, the first thing is to make a call to that:
 
@@ -116,16 +119,21 @@ return new FileStreamResult(stream, System.Net.Mime.MediaTypeNames.Application.Z
 };
 ```
 
-## Testing
+## Testing the Code
 
 So, we have shown how to build and deploy two example nodes for a 3D content pipeline but in order to test this I currently need to carry out the following:
 
-- Take the model and textures from [here](https://github.com/peted70/az-func-blender/tree/master/TestModels) and add all contents of that folder to a zip archive as it is organized in the folder
-- Manually uploaded to blob storage or some other accessible storage
-- Used the resulting uri (I generated a SAS uri using the [Azure portal](https://ms.portal.azure.com/) as input to run the Blender Azure Function running either locally or in Azure and download the resulting zip archive (You could use [Postman](https://www.postman.com/) with a POST/GET request or a browser with a GET request)
-- Upload that zip archive to blob storage manually (so we can get another uri)
-- Use the resulting SAS uri as input to the Simplygon Azure Function running locally on PC or deployed to Azure
-- Download and check the resulting zip archive
+1. Take the model and textures from [here](https://github.com/peted70/az-func-blender/tree/master/TestModels) and add all contents of that folder to a zip archive as it is organized in the folder
+
+2. Manually uploaded to blob storage or some other accessible storage
+
+3. Used the resulting URI (I generated a SAS URI using the [Azure portal](https://ms.portal.azure.com/) as input to run the Blender Azure Function running either locally or in Azure and download the resulting zip archive (You could use [Postman](https://www.postman.com/) with a POST/GET request or a browser with a GET request)
+
+4. Upload that zip archive to blob storage manually (so we can get another URI)
+
+5. Use the resulting SAS URI as input to the Simplygon Azure Function running locally on PC or deployed to Azure
+
+6. Download and check the resulting zip archive
 
 ![Compare Results](./images/results.png)
 *Shows the original mesh both shaded and wireframe against the processed result*
