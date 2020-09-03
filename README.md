@@ -26,7 +26,7 @@ The actual deployment can be done in several ways:
 - Use the [Functions CLI](https://github.com/Azure/azure-functions-core-tools) to publish everything and 
 - Whatever is mentioned in our [docs](https://docs.microsoft.com/en-us/azure/azure-functions/functions-continuous-deployment)
 
-When creating the Functions resource in Azure, please read "On Azure Resources" below to get the right size and configuration.
+When creating the Functions resource in Azure, please read the next section below to get the right size and configuration.
 
 ## Knowing your Azure resources
 
@@ -36,7 +36,7 @@ This Function does some fairly heavy work and requires appropriate hardware to f
 - Switch the Functions runtime to **64 bits**, or Simplygon assembly won't be loaded
 - EP1 plan or better (e.g. Premium App Service plans)
 
-When the deployment is finished, you can run some code to fetch the results:
+When the deployment is finished, you can run some code to fetch the results.
 
 # Interacting with your new polygon reduction API
 
