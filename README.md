@@ -8,7 +8,9 @@ Click the deploy to Azure button below to get up and running quickly.
 
 # Quick start
 
-[Deploy to Azure Button]()
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fpeted70%2Faz-func-simplygon%2Fmaster%2Fazuredeploy.json" target="_blank">
+    <img src="http://azuredeploy.net/deploybutton.png"/>
+</a>
 
 We'll ask for a valid Simplygon license key and a Simplygon SDK version in order to automatically set you up with those (i.e. download the SDK and install the license key file). 
 

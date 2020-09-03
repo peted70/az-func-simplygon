@@ -2,5 +2,5 @@ param(
     [string] $SimplygonLicenseKey
 )
 
-.\SimplygonSDK_*\SetupSimplygon.ps1 -Quiet
-.\SimplygonSDK_*\SimplygonLicenseApplication.exe -InstallLicense $SimplygonLicenseKey
+.\Simplygon9\SetupSimplygon.ps1 -Quiet
+.\Simplygon9\SimplygonLicenseApplication.exe -InstallLicense $SimplygonLicenseKey
