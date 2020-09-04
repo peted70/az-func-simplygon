@@ -97,7 +97,7 @@ namespace SimplygonFunctionApp
                 outputDir.Delete(true);
                 // Directory.Delete(zipDir, true); // this likely throws an exception (dangling file pointer?) but the exception is not caught by the `catch` block
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is DirectoryNotFoundException || ex is PathTooLongException)
             {
                 log.LogError(ex, $"Couldn't clean up all temporary files: Output directory exists: {outputDir.Exists}; input/zip directory exists: {Directory.Exists(zipDir)}");
             }
