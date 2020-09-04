@@ -92,11 +92,13 @@ namespace SimplygonFunctionApp
             log.LogInformation("Cleaning up ... ");
 
             // Cleanup by deleting the directories
-            try {
+            try
+            {
                 outputDir.Delete(true);
                 // Directory.Delete(zipDir, true); // this likely throws an exception (dangling file pointer?) but the exception is not caught by the `catch` block
             }
-            catch(Exception ex) {
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is DirectoryNotFoundException || ex is PathTooLongException)
+            {
                 log.LogError(ex, $"Couldn't clean up all temporary files: Output directory exists: {outputDir.Exists}; input/zip directory exists: {Directory.Exists(zipDir)}");
             }
 
@@ -200,7 +202,10 @@ namespace SimplygonFunctionApp
                             sgMetalnessCasterSettings.SetOutputImageFileFormat(Simplygon.EImageOutputFormat.JPEG);
                         }
 
+                        log.LogInformation("Processing MetalnessCaster...");
                         sgMetalnessCaster.RunProcessing();
+                        log.LogInformation("Processing MetalnessCaster done.");
+
                         MetalnessTextureFilePath = sgMetalnessCaster.GetOutputFilePath();
                     }
 
@@ -218,7 +223,10 @@ namespace SimplygonFunctionApp
                             sgRoughnessCasterSettings.SetOutputImageFileFormat(Simplygon.EImageOutputFormat.JPEG);
                         }
 
+                        log.LogInformation("Processing RoughnessCaster...");
                         sgRoughnessCaster.RunProcessing();
+                        log.LogInformation("Processing RoughnessCaster done.");
+
                         RoughnessTextureFilePath = sgRoughnessCaster.GetOutputFilePath();
                     }
 
@@ -238,7 +246,10 @@ namespace SimplygonFunctionApp
                             sgNormalsCasterSettings.SetOutputImageFileFormat(Simplygon.EImageOutputFormat.JPEG);
                         }
 
+                        log.LogInformation("Processing NormalsCaster...");
                         sgNormalsCaster.RunProcessing();
+                        log.LogInformation("Processing NormalsCaster done.");
+
                         normalsTextureFilePath = sgNormalsCaster.GetOutputFilePath();
                     }
 
@@ -252,6 +263,8 @@ namespace SimplygonFunctionApp
                             sgBaseColorTexture.SetName("Basecolor");
                             sgBaseColorTexture.SetFilePath(BaseColorTextureFilePath);
                             sgTextureTable.AddTexture(sgBaseColorTexture);
+
+                            log.LogInformation("BaseColorTexture set.");
                         }
 
                         using (Simplygon.spShadingTextureNode sgBaseColorTextureShadingNode = sg.CreateShadingTextureNode())
@@ -261,6 +274,8 @@ namespace SimplygonFunctionApp
 
                             sgMaterial.AddMaterialChannel("Basecolor");
                             sgMaterial.SetShadingNetwork("Basecolor", sgBaseColorTextureShadingNode);
+
+                            log.LogInformation("BaseColorTextureShadingNode set.");
                         }
 
                         using (Simplygon.spTexture sgNormalsTexture = sg.CreateTexture())
@@ -268,6 +283,8 @@ namespace SimplygonFunctionApp
                             sgNormalsTexture.SetName("Normals");
                             sgNormalsTexture.SetFilePath(normalsTextureFilePath);
                             sgTextureTable.AddTexture(sgNormalsTexture);
+
+                            log.LogInformation("NormalsTexture set.");
                         }
 
                         using (Simplygon.spShadingTextureNode sgNormalsTextureShadingNode = sg.CreateShadingTextureNode())
@@ -277,6 +294,8 @@ namespace SimplygonFunctionApp
 
                             sgMaterial.AddMaterialChannel("Normals");
                             sgMaterial.SetShadingNetwork("Normals", sgNormalsTextureShadingNode);
+
+                            log.LogInformation("NormalsTextureShadingNode set.");
                         }
 
                         using (Simplygon.spTexture sgOcclusionTexture = sg.CreateTexture())
@@ -284,15 +303,8 @@ namespace SimplygonFunctionApp
                             sgOcclusionTexture.SetName("Occlusion");
                             sgOcclusionTexture.SetFilePath(OcclusionTextureFilePath);
                             sgTextureTable.AddTexture(sgOcclusionTexture);
-                        }
 
-                        using (Simplygon.spShadingTextureNode sgOcclusionTextureShadingNode = sg.CreateShadingTextureNode())
-                        {
-                            sgOcclusionTextureShadingNode.SetTexCoordLevel(0);
-                            sgOcclusionTextureShadingNode.SetTextureName("Occlusion");
-
-                            sgMaterial.AddMaterialChannel("Occlusion");
-                            sgMaterial.SetShadingNetwork("Occlusion", sgOcclusionTextureShadingNode);
+                            log.LogInformation("OcclusionTexture set.");
                         }
 
                         using (Simplygon.spTexture sgRoughnessTexture = sg.CreateTexture())
@@ -300,22 +312,8 @@ namespace SimplygonFunctionApp
                             sgRoughnessTexture.SetName("Roughness");
                             sgRoughnessTexture.SetFilePath(RoughnessTextureFilePath);
                             sgTextureTable.AddTexture(sgRoughnessTexture);
-                        }
 
-                        using (Simplygon.spShadingTextureNode sgRoughnessTextureShadingNode = sg.CreateShadingTextureNode())
-                        {
-                            sgRoughnessTextureShadingNode.SetTexCoordLevel(0);
-                            sgRoughnessTextureShadingNode.SetTextureName("Roughness");
-
-                            sgMaterial.AddMaterialChannel("Roughness");
-                            sgMaterial.SetShadingNetwork("Roughness", sgRoughnessTextureShadingNode);
-                        }
-
-                        using (Simplygon.spTexture sgMetalnessTexture = sg.CreateTexture())
-                        {
-                            sgMetalnessTexture.SetName("Metalness");
-                            sgMetalnessTexture.SetFilePath(MetalnessTextureFilePath);
-                            sgTextureTable.AddTexture(sgMetalnessTexture);
+                            log.LogInformation("RoughnessTexture set.");
                         }
 
                         using (Simplygon.spShadingTextureNode sgMetalnessTextureShadingNode = sg.CreateShadingTextureNode())
@@ -324,6 +322,8 @@ namespace SimplygonFunctionApp
                             sgMetalnessTextureShadingNode.SetTextureName("Metalness");
                             sgMaterial.AddMaterialChannel("Metalness");
                             sgMaterial.SetShadingNetwork("Metalness", sgMetalnessTextureShadingNode);
+
+                            log.LogInformation("MetalnessTextureShadingNode set.");
                         }
 
                         sgMaterialTable.AddMaterial(sgMaterial);
@@ -332,18 +332,26 @@ namespace SimplygonFunctionApp
                         sgScene.GetMaterialTable().Clear();
                         sgScene.GetTextureTable().Copy(sgTextureTable);
                         sgScene.GetMaterialTable().Copy(sgMaterialTable);
+
+                        log.LogInformation("Update scene with new casted textures done.");
                     }
                 }
+
                 using (Simplygon.spSceneExporter sgSceneExporter = sg.CreateSceneExporter())
                 {
                     sgSceneExporter.SetScene(sgScene);
                     sgSceneExporter.SetExportFilePath(filePathOutput);
+
+                    log.LogInformation("SceneExporter run export starting...");
 
                     if (!sgSceneExporter.RunExport())
                     {
                         log.LogError($"Failed to save RemeshingOutput {filePathOutput}");
                         throw new Exception("Failed to save RemeshingOutput.");
                     }
+
+                    log.LogInformation("SceneExporter done!");
+
                     return filePathOutput;
                 }
             }
